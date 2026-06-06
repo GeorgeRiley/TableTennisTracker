@@ -60,9 +60,12 @@ export default function RecordGame({ onGameRecorded }) {
   const [saved, setSaved] = useState(false)
   const savedTimer = useRef(null)
 
-  useEffect(() => {
-    supabase.from('players').select('*').order('name').then(({ data }) => setPlayers(data ?? []))
-  }, [])
+  async function loadPlayers() {
+    const { data } = await supabase.from('players').select('*').order('name')
+    setPlayers(data ?? [])
+  }
+
+  useEffect(() => { loadPlayers() }, [])
 
   // Rating preview
   useEffect(() => {
@@ -162,6 +165,9 @@ export default function RecordGame({ onGameRecorded }) {
         { player_id: loser.id, game_id: game.id, points_change: loserChange, rating_after: Math.max(100, loser.rating + loserChange) },
       ])
 
+      // Reload players so next game uses fresh ratings
+      await loadPlayers()
+
       // Winner stays on — keep winner in p1, clear p2
       setScore1(0)
       setScore2(0)
@@ -215,6 +221,9 @@ export default function RecordGame({ onGameRecorded }) {
         await supabase.from('players').update({ rating: newRating, losses: (l.losses ?? 0) + 1 }).eq('id', l.id)
         await supabase.from('rating_history').insert({ player_id: l.id, game_id: game.id, points_change: loserChange, rating_after: newRating })
       }
+
+      // Reload players so next game uses fresh ratings
+      await loadPlayers()
 
       // Winning team stays as team A, clear team B
       setScore1(0)
