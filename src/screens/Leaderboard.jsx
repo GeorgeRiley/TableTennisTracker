@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { getTier } from '../levels'
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const POSITION_LABEL = ['1st', '2nd', '3rd']
 
 function FormDots({ playerIds, allHistory }) {
   if (!allHistory) return null
@@ -11,11 +11,8 @@ function FormDots({ playerIds, allHistory }) {
   return (
     <div className="flex gap-1 mt-1">
       {results.map((won, i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full"
-          style={{ background: won ? '#4ade80' : '#d4196e' }}
-        />
+        <span key={i} className="w-2 h-2 rounded-full"
+          style={{ background: won ? '#4ade80' : '#d4196e' }} />
       ))}
     </div>
   )
@@ -35,7 +32,6 @@ export default function Leaderboard() {
       const players = playerData ?? []
       setPlayers(players)
 
-      // Fetch last 5 results per player from rating_history
       if (players.length > 0) {
         const ids = players.map(p => p.id)
         const { data: histData } = await supabase
@@ -44,7 +40,6 @@ export default function Leaderboard() {
           .in('player_id', ids)
           .order('created_at', { ascending: false })
 
-        // Group into map: { playerId: [true, false, ...] } (true=win)
         const map = {}
         for (const row of histData ?? []) {
           if (!map[row.player_id]) map[row.player_id] = []
@@ -77,39 +72,46 @@ export default function Leaderboard() {
       <h2 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6dd5f0' }}>
         Standings
       </h2>
-      {players.map((player, i) => (
-        <div
-          key={player.id}
-          className="rounded-xl px-4 py-3 flex items-center gap-3"
-          style={{ background: i === 0 ? 'linear-gradient(135deg, #5c1942 0%, #1a2f55 100%)' : '#112244', border: '1px solid #1e3a5f' }}
-        >
-          <span className="text-xl w-7 text-center flex-shrink-0">
-            {i < 3 ? MEDALS[i] : <span className="text-sm font-bold" style={{ color: '#4a6080' }}>{i + 1}</span>}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="font-semibold text-white truncate">{player.name}</p>
-              {(() => {
-                const tier = getTier(player.rating)
-                return (
-                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-md flex-shrink-0"
-                    style={{ background: tier.bg, color: tier.color, border: `1px solid ${tier.border}` }}>
-                    {tier.emoji} {tier.name}
-                  </span>
-                )
-              })()}
+      {players.map((player, i) => {
+        const tier = getTier(player.rating)
+        return (
+          <div
+            key={player.id}
+            className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{ background: tier.cardGradient, border: tier.border }}
+          >
+            {/* Position */}
+            <div className="flex-shrink-0 w-8 text-center">
+              {i < 3
+                ? <span className="text-xl">{['🥇','🥈','🥉'][i]}</span>
+                : <span className="text-sm font-bold" style={{ color: '#4a6080' }}>{i + 1}</span>
+              }
             </div>
-            <p className="text-xs" style={{ color: '#4a6080' }}>
-              {player.wins ?? 0}W — {player.losses ?? 0}L
-            </p>
-            <FormDots playerIds={player.id} allHistory={formHistory} />
+
+            {/* Name + stats */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-white truncate">{player.name}</p>
+                {tier.name !== 'Bronze' && (
+                  <span className="text-xs font-bold flex-shrink-0" style={{ color: tier.color }}>
+                    {tier.emoji}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs" style={{ color: '#4a6080' }}>
+                {player.wins ?? 0}W — {player.losses ?? 0}L
+              </p>
+              <FormDots playerIds={player.id} allHistory={formHistory} />
+            </div>
+
+            {/* Rating */}
+            <div className="text-right flex-shrink-0">
+              <p className="text-lg font-bold" style={{ color: tier.color }}>{player.rating}</p>
+              <p className="text-xs" style={{ color: '#4a6080' }}>pts</p>
+            </div>
           </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-lg font-bold" style={{ color: '#6dd5f0' }}>{player.rating}</p>
-            <p className="text-xs" style={{ color: '#4a6080' }}>pts</p>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

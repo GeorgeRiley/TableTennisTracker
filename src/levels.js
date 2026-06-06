@@ -1,8 +1,44 @@
 export const TIERS = [
-  { name: 'Bronze',   min: 0,    max: 1099, color: '#cd7f32', bg: '#2a1a0d', border: '#6b3f1a', emoji: '🥉' },
-  { name: 'Silver',   min: 1100, max: 1249, color: '#a8b8c8', bg: '#1a1f2a', border: '#3a4a5a', emoji: '🥈' },
-  { name: 'Gold',     min: 1250, max: 1449, color: '#f5c842', bg: '#2a220d', border: '#6b560a', emoji: '🥇' },
-  { name: 'Platinum', min: 1450, max: Infinity, color: '#6dd5f0', bg: '#0d2233', border: '#1a5a7a', emoji: '💎' },
+  {
+    name: 'Bronze',
+    min: 0, max: 1099,
+    color: '#cd7f32',
+    bg: '#112244',
+    cardGradient: '#112244',
+    border: '1px solid #1e3a5f',
+    progressColor: '#cd7f32',
+    emoji: '🥉',
+  },
+  {
+    name: 'Silver',
+    min: 1100, max: 1249,
+    color: '#c8d8e8',
+    bg: '#1a2535',
+    cardGradient: 'linear-gradient(135deg, #1e2e42 0%, #2a3a50 100%)',
+    border: '1px solid #4a6a8a',
+    progressColor: '#a8c8e8',
+    emoji: '🥈',
+  },
+  {
+    name: 'Gold',
+    min: 1250, max: 1449,
+    color: '#f5c842',
+    bg: '#241a08',
+    cardGradient: 'linear-gradient(135deg, #2e1f06 0%, #3a2a0a 100%)',
+    border: '1px solid #7a5a10',
+    progressColor: '#f5c842',
+    emoji: '🥇',
+  },
+  {
+    name: 'Platinum',
+    min: 1450, max: Infinity,
+    color: '#6dd5f0',
+    bg: '#0a1e2e',
+    cardGradient: 'linear-gradient(135deg, #0a2238 0%, #0d3348 50%, #5c1942 100%)',
+    border: '1px solid #2a7a9a',
+    progressColor: '#6dd5f0',
+    emoji: '💎',
+  },
 ]
 
 export function getTier(rating) {

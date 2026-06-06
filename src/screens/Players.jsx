@@ -263,6 +263,7 @@ export default function Players() {
   if (selectedPlayer) {
     const chartData = [...history].reverse()
     const recentGames = history.slice(0, 10)
+    const playerTier = getTier(selectedPlayer.rating)
 
     return (
       <div className="p-4">
@@ -272,7 +273,7 @@ export default function Players() {
         </button>
 
         {/* Profile header */}
-        <div className="rounded-xl p-4 mb-4" style={cardStyle}>
+        <div className="rounded-xl p-4 mb-4" style={{ background: playerTier.cardGradient, border: playerTier.border }}>
           {editing ? (
             <div className="space-y-2">
               <input
@@ -313,26 +314,26 @@ export default function Players() {
                 </button>
               </div>
 
-              {/* Tier badge + progress */}
+              {/* Tier progress */}
               {(() => {
-                const tier = getTier(selectedPlayer.rating)
+                const tier = playerTier
                 const next = getNextTier(selectedPlayer.rating)
                 const progress = getProgress(selectedPlayer.rating)
                 return (
-                  <div className="rounded-lg p-3 mb-3" style={{ background: tier.bg, border: `1px solid ${tier.border}` }}>
+                  <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(0,0,0,0.2)' }}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-bold" style={{ color: tier.color }}>
                         {tier.emoji} {tier.name}
                       </span>
                       {next && (
-                        <span className="text-xs" style={{ color: '#4a6080' }}>
+                        <span className="text-xs" style={{ color: '#8a9aaa' }}>
                           {next.emoji} {next.name} in {next.min - selectedPlayer.rating} pts
                         </span>
                       )}
                     </div>
                     <div className="h-2 rounded-full overflow-hidden" style={{ background: '#0d1b35' }}>
                       <div className="h-full rounded-full transition-all"
-                        style={{ width: `${progress}%`, background: tier.color }} />
+                        style={{ width: `${progress}%`, background: tier.progressColor }} />
                     </div>
                   </div>
                 )
