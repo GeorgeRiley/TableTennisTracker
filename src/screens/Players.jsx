@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { BASE_RATING } from '../rating'
+import { getTier, getProgress, getNextTier } from '../levels'
 
 // Simple SVG line chart for rating history
 function RatingChart({ data }) {
@@ -101,6 +102,71 @@ function HeadToHead({ playerId, allPlayers }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function NemesisVictim({ playerId, allPlayers }) {
+  const [nemesis, setNemesis] = useState(null)
+  const [victim, setVictim] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('games')
+        .select('player1_id, player2_id, winner_id')
+        .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
+
+      if (!data || data.length === 0) { setLoading(false); return }
+
+      const tally = {}
+      for (const g of data) {
+        const oppId = g.player1_id === playerId ? g.player2_id : g.player1_id
+        if (!tally[oppId]) tally[oppId] = { wins: 0, losses: 0 }
+        if (g.winner_id === playerId) tally[oppId].wins++
+        else tally[oppId].losses++
+      }
+
+      const records = Object.entries(tally).map(([id, rec]) => ({
+        id,
+        name: allPlayers.find(p => p.id === id)?.name ?? 'Unknown',
+        ...rec,
+      }))
+
+      // Nemesis = most losses against (min 1 loss)
+      const nem = records.filter(r => r.losses > 0).sort((a, b) => b.losses - a.losses)[0] ?? null
+      // Victim = most wins against (min 1 win)
+      const vic = records.filter(r => r.wins > 0).sort((a, b) => b.wins - a.wins)[0] ?? null
+
+      setNemesis(nem)
+      setVictim(vic)
+      setLoading(false)
+    }
+    load()
+  }, [playerId])
+
+  if (loading) return <p className="text-xs py-2" style={{ color: '#4a6080' }}>Loading...</p>
+  if (!nemesis && !victim) return <p className="text-xs py-2" style={{ color: '#4a6080' }}>Play more games to unlock</p>
+
+  return (
+    <div className="flex gap-3">
+      {nemesis && (
+        <div className="flex-1 rounded-xl p-3 text-center" style={{ background: '#2a0d1a', border: '1px solid #4a1a2a' }}>
+          <p className="text-2xl mb-1">😈</p>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#d4196e' }}>Nemesis</p>
+          <p className="text-sm font-bold text-white truncate">{nemesis.name}</p>
+          <p className="text-xs mt-0.5" style={{ color: '#4a6080' }}>{nemesis.losses} losses</p>
+        </div>
+      )}
+      {victim && (
+        <div className="flex-1 rounded-xl p-3 text-center" style={{ background: '#0d2a1a', border: '1px solid #1a4a2a' }}>
+          <p className="text-2xl mb-1">🎯</p>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#4ade80' }}>Favourite Victim</p>
+          <p className="text-sm font-bold text-white truncate">{victim.name}</p>
+          <p className="text-xs mt-0.5" style={{ color: '#4a6080' }}>{victim.wins} wins</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -232,27 +298,55 @@ export default function Players() {
               </div>
             </div>
           ) : (
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h2 className="text-xl font-bold text-white">{selectedPlayer.name}</h2>
-                <p className="text-3xl font-bold mt-1" style={{ color: '#6dd5f0' }}>
-                  {selectedPlayer.rating} <span className="text-base font-normal" style={{ color: '#4a6080' }}>pts</span>
-                </p>
-                <div className="flex gap-6 mt-3 text-sm" style={{ color: '#4a6080' }}>
-                  <span><strong className="text-white">{selectedPlayer.wins ?? 0}</strong> Wins</span>
-                  <span><strong className="text-white">{selectedPlayer.losses ?? 0}</strong> Losses</span>
-                  <span><strong className="text-white">
-                    {(selectedPlayer.wins ?? 0) + (selectedPlayer.losses ?? 0) > 0
-                      ? Math.round(((selectedPlayer.wins ?? 0) / ((selectedPlayer.wins ?? 0) + (selectedPlayer.losses ?? 0))) * 100)
-                      : 0}%
-                  </strong> Win rate</span>
+            <div>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <h2 className="text-xl font-bold text-white">{selectedPlayer.name}</h2>
+                  <p className="text-3xl font-bold mt-0.5" style={{ color: '#6dd5f0' }}>
+                    {selectedPlayer.rating} <span className="text-base font-normal" style={{ color: '#4a6080' }}>pts</span>
+                  </p>
                 </div>
+                <button onClick={() => { setEditName(selectedPlayer.name); setEditing(true) }}
+                  className="text-xs px-3 py-1.5 rounded-lg font-semibold flex-shrink-0"
+                  style={{ background: '#1e3a5f', color: '#6dd5f0' }}>
+                  Rename
+                </button>
               </div>
-              <button onClick={() => { setEditName(selectedPlayer.name); setEditing(true) }}
-                className="text-xs px-3 py-1.5 rounded-lg font-semibold flex-shrink-0"
-                style={{ background: '#1e3a5f', color: '#6dd5f0' }}>
-                Rename
-              </button>
+
+              {/* Tier badge + progress */}
+              {(() => {
+                const tier = getTier(selectedPlayer.rating)
+                const next = getNextTier(selectedPlayer.rating)
+                const progress = getProgress(selectedPlayer.rating)
+                return (
+                  <div className="rounded-lg p-3 mb-3" style={{ background: tier.bg, border: `1px solid ${tier.border}` }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold" style={{ color: tier.color }}>
+                        {tier.emoji} {tier.name}
+                      </span>
+                      {next && (
+                        <span className="text-xs" style={{ color: '#4a6080' }}>
+                          {next.emoji} {next.name} in {next.min - selectedPlayer.rating} pts
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#0d1b35' }}>
+                      <div className="h-full rounded-full transition-all"
+                        style={{ width: `${progress}%`, background: tier.color }} />
+                    </div>
+                  </div>
+                )
+              })()}
+
+              <div className="flex gap-6 text-sm" style={{ color: '#4a6080' }}>
+                <span><strong className="text-white">{selectedPlayer.wins ?? 0}</strong> Wins</span>
+                <span><strong className="text-white">{selectedPlayer.losses ?? 0}</strong> Losses</span>
+                <span><strong className="text-white">
+                  {(selectedPlayer.wins ?? 0) + (selectedPlayer.losses ?? 0) > 0
+                    ? Math.round(((selectedPlayer.wins ?? 0) / ((selectedPlayer.wins ?? 0) + (selectedPlayer.losses ?? 0))) * 100)
+                    : 0}%
+                </strong> Win rate</span>
+              </div>
             </div>
           )}
         </div>
@@ -264,6 +358,12 @@ export default function Players() {
             ? <p className="text-xs text-center py-3" style={{ color: '#4a6080' }}>Loading...</p>
             : <RatingChart data={chartData} />
           }
+        </div>
+
+        {/* Nemesis & Victim */}
+        <h3 className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6dd5f0' }}>Rivals</h3>
+        <div className="mb-4">
+          <NemesisVictim playerId={selectedPlayer.id} allPlayers={players} />
         </div>
 
         {/* Head to head */}

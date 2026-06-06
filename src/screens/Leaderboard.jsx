@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
+import { getTier } from '../levels'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
@@ -86,7 +87,18 @@ export default function Leaderboard() {
             {i < 3 ? MEDALS[i] : <span className="text-sm font-bold" style={{ color: '#4a6080' }}>{i + 1}</span>}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-white truncate">{player.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-white truncate">{player.name}</p>
+              {(() => {
+                const tier = getTier(player.rating)
+                return (
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-md flex-shrink-0"
+                    style={{ background: tier.bg, color: tier.color, border: `1px solid ${tier.border}` }}>
+                    {tier.emoji} {tier.name}
+                  </span>
+                )
+              })()}
+            </div>
             <p className="text-xs" style={{ color: '#4a6080' }}>
               {player.wins ?? 0}W — {player.losses ?? 0}L
             </p>
