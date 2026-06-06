@@ -154,7 +154,7 @@ export default function Players() {
     setHistoryLoading(true)
     const { data } = await supabase
       .from('rating_history')
-      .select('*, games(player1_id, player2_id, score1, score2, game_to, winner_id)')
+      .select('*, games(player1_id, player2_id, player3_id, player4_id, score1, score2, game_to, winner_id, is_doubles)')
       .eq('player_id', player.id)
       .order('created_at', { ascending: false })
       .limit(20)
@@ -281,23 +281,50 @@ export default function Players() {
         ) : (
           <div className="space-y-2 mb-6">
             {recentGames.map(h => {
-              const won = h.games?.winner_id === selectedPlayer.id
+              const g = h.games
+              const won = g?.winner_id === selectedPlayer.id
+              const isDoubles = g?.is_doubles
+
+              // Build pairing strings for doubles
+              let pairingLine = null
+              if (isDoubles && g) {
+                const name = id => players.find(p => p.id === id)?.name ?? '?'
+                // Figure out which team this player was on
+                const onTeamA = g.player1_id === selectedPlayer.id || g.player3_id === selectedPlayer.id
+                const myPartner = onTeamA
+                  ? name(g.player1_id === selectedPlayer.id ? g.player3_id : g.player1_id)
+                  : name(g.player2_id === selectedPlayer.id ? g.player4_id : g.player2_id)
+                const opp1 = onTeamA ? name(g.player2_id) : name(g.player1_id)
+                const opp2 = onTeamA ? name(g.player4_id) : name(g.player3_id)
+                pairingLine = `w/ ${myPartner} vs ${opp1} & ${opp2}`
+              }
+
               return (
-                <div key={h.id} className="rounded-xl px-4 py-3 flex items-center justify-between" style={cardStyle}>
-                  <div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                      style={won ? { background: '#0d2a1a', color: '#4ade80' } : { background: '#2a0d1a', color: '#d4196e' }}>
-                      {won ? 'WIN' : 'LOSS'}
-                    </span>
-                    {h.games && (
-                      <span className="text-xs ml-2" style={{ color: '#4a6080' }}>
-                        {h.games.score1}–{h.games.score2} (first to {h.games.game_to})
+                <div key={h.id} className="rounded-xl px-4 py-3" style={cardStyle}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={won ? { background: '#0d2a1a', color: '#4ade80' } : { background: '#2a0d1a', color: '#d4196e' }}>
+                        {won ? 'WIN' : 'LOSS'}
                       </span>
-                    )}
+                      {isDoubles && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: '#1e3a5f', color: '#6dd5f0' }}>
+                          2v2
+                        </span>
+                      )}
+                      {g && (
+                        <span className="text-xs" style={{ color: '#4a6080' }}>
+                          {g.score1}–{g.score2} (to {g.game_to})
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-bold text-sm flex-shrink-0" style={{ color: h.points_change >= 0 ? '#4ade80' : '#d4196e' }}>
+                      {h.points_change >= 0 ? '+' : ''}{h.points_change}
+                    </span>
                   </div>
-                  <span className="font-bold text-sm" style={{ color: h.points_change >= 0 ? '#4ade80' : '#d4196e' }}>
-                    {h.points_change >= 0 ? '+' : ''}{h.points_change}
-                  </span>
+                  {pairingLine && (
+                    <p className="text-xs mt-1.5" style={{ color: '#4a6080' }}>{pairingLine}</p>
+                  )}
                 </div>
               )
             })}

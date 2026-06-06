@@ -19,9 +19,14 @@ export default function App() {
 
   return (
     <div className="flex flex-col max-w-md mx-auto" style={{ background: '#0d1b35', height: '100svh' }}>
-      <header className="flex-shrink-0 px-4 py-4 shadow-lg" style={{ background: 'linear-gradient(135deg, #5c1942 0%, #0d1b35 100%)' }}>
-        <h1 className="text-xl font-bold tracking-tight text-white">Table Tennis</h1>
-        <p className="text-xs font-medium" style={{ color: '#6dd5f0' }}>Lunch League</p>
+      <header className="flex-shrink-0 shadow-lg" style={{ background: 'linear-gradient(135deg, #5c1942 0%, #0d1b35 100%)', paddingTop: 'calc(env(safe-area-inset-top) + 1rem)', paddingBottom: '0.75rem', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-white leading-tight">Table Tennis</h1>
+            <p className="text-xs font-medium" style={{ color: '#6dd5f0' }}>Lunch League</p>
+          </div>
+          <span className="text-2xl">🏓</span>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto">
@@ -30,7 +35,7 @@ export default function App() {
         {tab === 'players' && <Players key={refreshKey} />}
       </main>
 
-      <nav className="flex-shrink-0 flex border-t shadow-2xl" style={{ background: '#0f2040', borderColor: '#1e3a5f' }}>
+      <nav className="flex-shrink-0 flex border-t shadow-2xl" style={{ background: '#0f2040', borderColor: '#1e3a5f', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {TABS.map(t => (
           <button
             key={t.id}
