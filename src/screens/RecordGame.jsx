@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { calculateRatingChanges } from '../rating'
 
 const GAME_TO_OPTIONS = [5, 7, 11, 15, 21]
+const DEUCE_GAMES = [11, 15, 21] // must win by 2
 
 function ScoreInput({ label, value, onChange, max }) {
   function increment() { onChange(Math.min(max, (value ?? 0) + 1)) }
@@ -117,8 +118,20 @@ export default function RecordGame({ onGameRecorded }) {
 
   function validateScores(s1, s2, gt) {
     if (s1 === s2) return 'Scores cannot be equal'
-    if (Math.max(s1, s2) !== gt) return `Winner must have exactly ${gt} points`
-    if (Math.min(s1, s2) >= gt) return `Loser score must be less than ${gt}`
+    const winner = Math.max(s1, s2)
+    const loser = Math.min(s1, s2)
+    const diff = winner - loser
+
+    if (DEUCE_GAMES.includes(gt)) {
+      // Must reach gt, win by 2
+      if (winner < gt) return `Winner must have at least ${gt} points`
+      if (diff !== 2 && loser < gt - 1) return `Winner must have exactly ${gt} points`
+      if (diff !== 2) return 'Must win by 2 points'
+    } else {
+      // Standard — winner must have exactly gt
+      if (winner !== gt) return `Winner must have exactly ${gt} points`
+      if (loser >= gt) return `Loser score must be less than ${gt}`
+    }
     return null
   }
 
@@ -341,11 +354,11 @@ export default function RecordGame({ onGameRecorded }) {
             Score
           </label>
           <div className="flex gap-4 items-stretch">
-            <ScoreInput label={teamLabel1} value={score1} onChange={setScore1} max={gameTo} />
+            <ScoreInput label={teamLabel1} value={score1} onChange={setScore1} max={DEUCE_GAMES.includes(gameTo) ? 99 : gameTo} />
             <div className="flex items-center pt-8">
               <span className="font-black text-2xl" style={{ color: '#1e3a5f' }}>—</span>
             </div>
-            <ScoreInput label={teamLabel2} value={score2} onChange={setScore2} max={gameTo} />
+            <ScoreInput label={teamLabel2} value={score2} onChange={setScore2} max={DEUCE_GAMES.includes(gameTo) ? 99 : gameTo} />
           </div>
         </div>
 
